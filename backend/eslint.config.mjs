@@ -32,4 +32,10 @@ export default tseslint.config(
       "prettier/prettier": ["error", { endOfLine: "auto" }],
     },
   },
+  {
+    files: ['lib/**/*.ts'],
+    rules: {
+      'prettier/prettier': 'off',
+    },
+  },
 );
