@@ -12,16 +12,24 @@ datasource db {
   provider = "postgresql"
 }
 
+enum CollaboratorRole {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
 model User {
-  id            String    @id @default(uuid())
+  id            String             @id @default(uuid())
   name          String
-  email         String    @unique
-  emailVerified Boolean   @default(false)
+  email         String             @unique
+  emailVerified Boolean            @default(false)
   image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
   sessions      Session[]
   accounts      Account[] // each user can have multiple accounts for example one for google and one for github 
+  noteVersions  NoteVersion[]
+  noteAccess    NoteCollaborator[]
 
   @@map("user")
 }
@@ -57,4 +65,53 @@ model Account {
   updatedAt             DateTime  @updatedAt
 
   @@map("account")
+}
+
+model Note {
+  id             String             @id @default(uuid())
+  title          String
+  content        Json
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  isArchived     Boolean            @default(false)
+  deletedAt      DateTime?
+  currentVersion Int                @default(1)
+  collaborators  NoteCollaborator[]
+  versions       NoteVersion[]
+
+  @@index([updatedAt, id])
+  @@index([deletedAt])
+  @@map("note")
+}
+
+model NoteCollaborator {
+  noteId    String
+  userId    String
+  role      CollaboratorRole
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  note      Note             @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([noteId, userId])
+  @@index([userId, role])
+  @@index([noteId, role])
+  @@map("note_collaborator")
+}
+
+model NoteVersion {
+  id             String   @id @default(uuid())
+  noteId         String
+  version        Int
+  content        Json
+  changeSummary  String?
+  editedByUserId String
+  createdAt      DateTime @default(now())
+  note           Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  editedBy       User     @relation(fields: [editedByUserId], references: [id], onDelete: Restrict)
+
+  @@unique([noteId, version])
+  @@index([noteId, createdAt])
+  @@index([editedByUserId, createdAt])
+  @@map("note_version")
 }
