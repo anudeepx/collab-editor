@@ -1,168 +1,78 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { io, Socket } from "socket.io-client";
-
-type DocumentResponse = {
-  id: string;
-  title: string;
-  content: string;
-  createdAt: string;
-  updatedAt: string;
-};
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 export default function Home() {
-  const socketRef = useRef<Socket | null>(null);
-  const [documentId, setDocumentId] = useState("");
-  const [content, setContent] = useState("");
-  const [status, setStatus] = useState("Ready");
+  const router = useRouter();
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const socket = io(API_URL, {
-      transports: ["websocket"],
-    });
+  const handleCreateDocument = async () => {
+    try {
+      setCreating(true);
+      setError(null);
 
-    socket.on("connect", () => {
-      setStatus("Connected");
-    });
+      const response = await fetch(`${API_URL}/documents`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: "Start typing..." }),
+      });
 
-    socket.on("disconnect", () => {
-      setStatus("Disconnected");
-    });
+      if (!response.ok) throw new Error("Failed to create document");
 
-    socket.on("document-updated", (doc: DocumentResponse) => {
-      if (!doc?.id) {
-        return;
-      }
-
-      setDocumentId(doc.id);
-      setContent(doc.content ?? "");
-    });
-
-    socketRef.current = socket;
-
-    return () => {
-      socket.removeAllListeners();
-      socket.disconnect();
-      socketRef.current = null;
-    };
-  }, []);
-
-  async function createDocument() {
-    const response = await fetch(`${API_URL}/documents`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content }),
-    });
-
-    if (!response.ok) {
-      setStatus("Failed to create document");
-      return;
+      const doc = await response.json();
+      router.push(`/documents/${doc.id}`);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to create document",
+      );
+    } finally {
+      setCreating(false);
     }
+  };
 
-    const doc: DocumentResponse = await response.json();
-    setDocumentId(doc.id);
-    setContent(doc.content ?? "");
-    socketRef.current?.emit("join-document", { documentId: doc.id });
-    setStatus(`Created document ${doc.id}`);
-  }
-
-  async function loadDocument() {
-    if (!documentId.trim()) {
-      setStatus("Document ID is required");
-      return;
-    }
-
-    const response = await fetch(`${API_URL}/documents/${documentId}`);
-
-    if (!response.ok) {
-      setStatus("Failed to load document");
-      return;
-    }
-
-    const doc: DocumentResponse = await response.json();
-    setContent(doc.content ?? "");
-    socketRef.current?.emit("join-document", { documentId: doc.id });
-    setStatus(`Loaded document ${doc.id}`);
-  }
-
-  async function saveDocument() {
-    if (!documentId.trim()) {
-      setStatus("Document ID is required");
-      return;
-    }
-
-    const response = await fetch(`${API_URL}/documents/${documentId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content }),
-    });
-
-    if (!response.ok) {
-      setStatus("Failed to save document");
-      return;
-    }
-
-    setStatus(`Saved document ${documentId}`);
-  }
-
-  function handleEditorChange(value: string) {
-    setContent(value);
-
-    if (!documentId.trim()) {
-      return;
-    }
-
-    socketRef.current?.emit("edit-document", {
-      documentId,
-      content: value,
-    });
-  }
+  const handleViewDocuments = () => {
+    router.push("/documents");
+  };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-100 p-6 text-zinc-900">
-      <main className="flex w-full max-w-5xl flex-col gap-4 rounded-xl bg-white p-6 shadow-lg">
-        <h1 className="text-2xl font-bold">Collaborative Editor</h1>
+    <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <div className="text-center">
+        <h1 className="text-5xl font-bold text-gray-900 mb-4">Collab Editor</h1>
+        <p className="text-xl text-gray-600 mb-8">
+          Real-time collaborative document editing
+        </p>
 
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto_auto]">
-          <input
-            type="text"
-            value={documentId}
-            onChange={(event) => setDocumentId(event.target.value)}
-            placeholder="Document ID"
-            className="h-11 rounded-md border border-zinc-300 px-3 outline-none focus:border-zinc-500"
-          />
+        {error && (
+          <div className="mb-6 rounded-lg bg-red-50 p-3 text-red-700 text-sm">
+            {error}
+          </div>
+        )}
+
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <button
-            onClick={createDocument}
-            className="h-11 rounded-md bg-zinc-900 px-4 font-medium text-white"
+            onClick={handleCreateDocument}
+            disabled={creating}
+            className="px-8 py-3 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Create Document
+            {creating ? "Creating..." : "+ New Document"}
           </button>
           <button
-            onClick={loadDocument}
-            className="h-11 rounded-md bg-zinc-700 px-4 font-medium text-white"
+            onClick={handleViewDocuments}
+            className="px-8 py-3 rounded-lg bg-gray-200 text-gray-900 font-medium hover:bg-gray-300 transition-colors"
           >
-            Load Document
-          </button>
-          <button
-            onClick={saveDocument}
-            className="h-11 rounded-md bg-zinc-600 px-4 font-medium text-white"
-          >
-            Save Changes
+            View All Documents
           </button>
         </div>
 
-        <textarea
-          value={content}
-          onChange={(event) => handleEditorChange(event.target.value)}
-          className="min-h-[420px] w-full resize-y rounded-md border border-zinc-300 p-3 font-mono text-sm outline-none focus:border-zinc-500"
-          placeholder="Start typing here..."
-        />
-
-        <p className="text-sm text-zinc-600">{status}</p>
-      </main>
+        <p className="mt-12 text-gray-600 text-sm max-w-md">
+          Share documents with others via shareable links. Changes sync in
+          real-time with WebSocket.
+        </p>
+      </div>
     </div>
   );
 }
