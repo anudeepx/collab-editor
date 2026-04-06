@@ -6,6 +6,11 @@ import { DocumentService } from "./document.service.js";
 export class DocumentController {
     constructor(private readonly documentService: DocumentService) { }
 
+    @Get()
+    findAll() {
+        return this.documentService.findAll();
+    }
+
     @Post()
     create(@Body() createDocumentDto: CreateDocumentDto) {
         return this.documentService.create(createDocumentDto);

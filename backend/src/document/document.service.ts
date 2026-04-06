@@ -38,6 +38,19 @@ export class DocumentService {
     return this.toDocumentResponse(note);
   }
 
+  async findAll(): Promise<DocumentResponse[]> {
+    const notes = await prisma.note.findMany({
+      where: {
+        deletedAt: null,
+      },
+      orderBy: {
+        updatedAt: "desc",
+      },
+    });
+
+    return notes.map((note) => this.toDocumentResponse(note));
+  }
+
   async update(id: string, content: string): Promise<DocumentResponse> {
     await this.findOne(id);
 

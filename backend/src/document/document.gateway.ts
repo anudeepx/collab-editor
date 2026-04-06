@@ -1,5 +1,6 @@
 import {
   MessageBody,
+  ConnectedSocket,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
@@ -18,9 +19,9 @@ export class DocumentGateway {
 
   constructor(private readonly documentService: DocumentService) {}
 
-  @SubscribeMessage("join-document")
+  @SubscribeMessage("join")
   async handleJoin(
-    client: Socket,
+    @ConnectedSocket() client: Socket,
     @MessageBody() payload: { documentId: string },
   ) {
     if (!payload?.documentId) {
@@ -28,12 +29,14 @@ export class DocumentGateway {
     }
 
     client.join(payload.documentId);
-    const document = await this.documentService.findOne(payload.documentId);
-    client.emit("document-updated", document);
+    console.log(
+      `[ws] client ${client.id} joined document room ${payload.documentId}`,
+    );
   }
 
-  @SubscribeMessage("edit-document")
+  @SubscribeMessage("edit")
   async handleEdit(
+    @ConnectedSocket() client: Socket,
     @MessageBody() payload: { documentId: string; content: string },
   ) {
     if (!payload?.documentId) {
@@ -45,8 +48,15 @@ export class DocumentGateway {
       payload.content ?? "",
     );
 
-    this.server
-      .to(payload.documentId)
-      .emit("document-updated", updatedDocument);
+    console.log(
+      `[ws] edit from ${client.id} for ${payload.documentId} (${updatedDocument.content.length} chars)`,
+    );
+
+    // Broadcast to every other client in this room, excluding the sender.
+    client.to(payload.documentId).emit("update", {
+      documentId: payload.documentId,
+      content: updatedDocument.content,
+      updatedAt: updatedDocument.updatedAt,
+    });
   }
 }
