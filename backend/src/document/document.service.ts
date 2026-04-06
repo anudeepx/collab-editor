@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { prisma } from "../../lib/prisma";
-import { CreateDocumentDto } from "./dto/create-document.dto";
+import { prisma } from "../../lib/prisma.js";
+import { CreateDocumentDto } from "./dto/create-document.dto.js";
 
 type DocumentResponse = {
   id: string;

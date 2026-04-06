@@ -1,7 +1,7 @@
-import { Module } from '@nestjs/common';
-import { DocumentController } from './document.controller';
-import { DocumentGateway } from './document.gateway';
-import { DocumentService } from './document.service';
+import { Module } from "@nestjs/common";
+import { DocumentController } from "./document.controller.js";
+import { DocumentGateway } from "./document.gateway.js";
+import { DocumentService } from "./document.service.js";
 
 @Module({
     controllers: [DocumentController],

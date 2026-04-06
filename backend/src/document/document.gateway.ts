@@ -5,7 +5,7 @@ import {
   WebSocketServer,
 } from "@nestjs/websockets";
 import { Server, Socket } from "socket.io";
-import { DocumentService } from "./document.service";
+import { DocumentService } from "./document.service.js";
 
 @WebSocketGateway({
   cors: {

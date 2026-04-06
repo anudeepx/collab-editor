@@ -1,6 +1,6 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
-import { CreateDocumentDto } from './dto/create-document.dto';
-import { DocumentService } from './document.service';
+import { Body, Controller, Get, Param, Patch, Post } from "@nestjs/common";
+import { CreateDocumentDto } from "./dto/create-document.dto.js";
+import { DocumentService } from "./document.service.js";
 
 @Controller('documents')
 export class DocumentController {
