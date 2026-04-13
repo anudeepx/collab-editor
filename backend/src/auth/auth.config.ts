@@ -5,12 +5,22 @@ import { prisma } from "../../lib/prisma.js";
 
 const backendAuthUrl =
   process.env.BETTER_AUTH_URL?.trim() || "http://localhost:3001/auth";
-const frontendUrl = process.env.FRONTEND_URL?.trim() || "http://localhost:3000";
+
+const trustedOrigins = Array.from(
+  new Set([
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    ...(process.env.CLIENT_URL ?? "")
+      .split(",")
+      .map((origin) => origin.trim())
+      .filter(Boolean),
+  ]),
+);
 
 export const auth = betterAuth({
   baseURL: backendAuthUrl,
   secret: process.env.BETTER_AUTH_SECRET,
-  trustedOrigins: [frontendUrl],
+  trustedOrigins,
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),

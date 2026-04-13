@@ -30,7 +30,7 @@ export default function Home() {
     try {
       await authClient.signIn.social({
         provider: "google",
-        callbackURL: "/documents",
+        callbackURL: `${window.location.origin}/documents`,
       });
     } catch (error) {
       console.error("Google sign up failed:", error);

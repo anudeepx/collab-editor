@@ -62,7 +62,7 @@ type EditAck =
     };
 
 const FRONTEND_ORIGIN =
-  process.env.FRONTEND_URL?.trim() || "http://localhost:3000";
+  process.env.CLIENT_URL?.trim() || "http://localhost:3000";
 const MIN_EDIT_INTERVAL_MS = 120;
 
 @WebSocketGateway({
